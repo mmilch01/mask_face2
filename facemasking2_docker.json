@@ -1,0 +1,207 @@
+{
+  "name": "Facemasking2 v1.0",
+  "label": "Facemasking2",
+  "description": "Runs Facemasking2 on structural MRI)",
+  "version": "1.0",
+  "schema-version": "1.0",
+  "info-url": "",
+  "image": "registry.nrg.wustl.edu/docker/nrg-repo/facemasking2:1.0",
+  "type": "docker",
+  "command-line": "run_facemasking2_xnat #SESSION_LABEL# #REF_SCAN1#,#SCAN2#,#SCAN3#,#SCAN4#,#SCAN5# --srv $XNAT_HOST --usr $XNAT_USER --pass $XNAT_PASS --proj #PROJECT# --subj #SUBJECT# -t #THRESH#, -s #COARSENESS# -b #USE_BET# -bhd #USE_BETHD# -e #MASK_EARS# 
+  "override-entrypoint": true,
+  "mounts": [
+    {
+      "name": "input",
+      "writable": false,
+      "path": "/input"
+    },
+    {
+      "name": "output",
+      "writable": true,
+      "path": "/docker_mount"
+    }
+  ],
+  "environment-variables": {},
+  "ports": {},
+  "inputs": [
+    {
+      "name": "SESSION_ID",
+      "description": "XNAT session ID",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "SESSION_LABEL",
+      "description": "XNAT session label",
+      "type": "string"
+    },
+    {
+      "name": "PROJECT",
+      "description": "XNAT project",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "SUBJECT",
+      "description": "XNAT subject",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "REF_SCAN1",
+      "description": "Reference scan (choose scan of highest quality)",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "SCAN2",
+      "description": "Another scan",
+      "type": "string"
+    },
+    {
+      "name": "SCAN3",
+      "description": "Another scan",
+      "type": "string"
+    },
+    {
+      "name": "SCAN4",
+      "description": "Another scan",
+      "type": "string"
+    },
+    {
+      "name": "SCAN5",
+      "description": "Another scan",
+      "type": "string"
+    },
+    {
+      "name": "THRESH",
+      "description": "Object/background intensity threshold [-1 for auto-detect]",
+      "type": "string"
+      "required": true,
+      "default-value": "-1"
+    },
+    {
+      "name": "COARSENESS",
+      "description": "Grid coarseness between 0.3 and 3.0",
+      "type": "string",
+      "default-value": "1.0",
+      "required": true
+    },
+    {
+      "name": "USE_BET",
+      "description": "USE BET to mask brain (fast, less accurate)",
+      "type": "string",
+      "required": true,
+      "default_value": "0"
+    },
+    {
+      "name": "USE_BETHD",
+      "description": "Use BET HD to mask brain (fast on GPU, more accurate)",
+      "type": "string",
+      "default-value": "0",
+      "required": true
+    },
+    {
+      "name": "MASK_EARS",
+      "description": "Apply surface mask to ears",
+      "type": "string",
+      "default-value": "0",
+      "required": true
+    }
+  ],
+  "outputs": [],
+  "xnat": [
+    {
+      "name": "Facemasking2",
+      "description": "Run Facemasking2 1.0",
+      "contexts": [
+        "xnat:imageSessionData"
+      ],
+      "external-inputs": [
+        {
+          "name": "session",
+          "description": "Input session",
+          "type": "Session",
+          "required": true,
+          "load-children": true
+        }
+      ],
+      "derived-inputs": [
+        {
+          "name": "session-label",
+          "description": "Session label",
+          "type": "string",
+          "required": true,
+          "provides-value-for-command-input": "SESSION_LABEL",
+          "load-children": true,
+          "derived-from-wrapper-input": "session",
+          "derived-from-xnat-object-property": "label"
+        },
+        {
+          "name": "subject-id",
+          "description": "Subject id",
+          "type": "string",
+          "required": true,
+          "provides-value-for-command-input": "SUBJECT",
+          "load-children": true,
+          "derived-from-wrapper-input": "session",
+          "derived-from-xnat-object-property": "subject-id"
+        },
+        {
+          "name": "project-id",
+          "description": "Project ID",
+          "type": "string",
+          "required": true,
+          "provides-value-for-command-input": "PROJECT",
+          "load-children": true,
+          "derived-from-wrapper-input": "session",
+          "derived-from-xnat-object-property": "project-id"
+        },
+        {
+          "name": "REF_SCAN1",
+          "description": "Reference scan (choose scan of highest quality)",
+          "type": "Scan",
+          "required": true,
+          "provides-value-for-command-input": "REF_SCAN1",
+          "load-children": true,
+          "derived-from-wrapper-input": "session"
+        },
+        {
+          "name": "SCAN2",
+          "description": "Another scan (optional)",
+          "type": "Scan",
+          "provides-value-for-command-input": "SCAN2",
+          "load-children": true,
+          "derived-from-wrapper-input": "session"
+        },
+        {
+          "name": "SCAN3",
+          "description": "Another scan (optional)",
+          "type": "Scan",
+          "provides-value-for-command-input": "SCAN3",
+          "load-children": true,
+          "derived-from-wrapper-input": "session"
+        },
+        {
+          "name": "SCAN4",
+          "description": "Another scan (optional)",
+          "type": "Scan",
+          "provides-value-for-command-input": "SCAN4",
+          "load-children": true,
+          "derived-from-wrapper-input": "session"
+        },
+        {
+          "name": "SCAN5",
+          "description": "Another scan (optional)",
+          "type": "Scan",
+          "provides-value-for-command-input": "SCAN5",
+          "load-children": true,
+          "derived-from-wrapper-input": "session"
+        }
+      ],
+      "output-handlers": []
+    }
+  ],
+  "reserve-memory": 5120,
+  "limit-cpu": 4
+}
