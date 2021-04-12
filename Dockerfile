@@ -7,7 +7,7 @@ ENV MCR_HOME=/usr/local/MATLAB_Runtime \
 	PATH=/usr/local/miniconda3/bin:/nrgpackages/packages/fsl/bin:/nrgpackages/tools/nrg-improc:$PATH
 
 RUN curl https://nvidia.github.io/nvidia-docker/centos7/nvidia-docker.repo > /etc/yum.repos.d/nvidia-docker.repo && \ 
-	yum -y install nvidia-container-toolkit ImageMagick wget bzip2 git bc which libX11 libXt java 
+	yum -y install nvidia-container-toolkit ImageMagick wget zip unzip bzip2 git bc which libX11 libXt java 
 
 RUN mkdir -p /usr/local/MATLAB_Runtime && \
 	mkdir -p /docker_mount && \
