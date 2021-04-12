@@ -3,8 +3,8 @@ FROM centos:7.5.1804
 ENV MCR_HOME=/usr/local/MATLAB_Runtime \	
 	MASKFACE_HOME=/usr/local/maskface2 \
 	MCR_CACHE_ROOT=/tmp \
-	FSLDIR=/nrgpackages/packages/fsl6 \
-	PATH=/usr/local/miniconda3/bin:/nrgpackages/packages/fsl6/bin:/nrgpackages/tools/nrg-improc:$PATH
+	FSLDIR=/nrgpackages/packages/fsl \
+	PATH=/usr/local/miniconda3/bin:/nrgpackages/packages/fsl/bin:/nrgpackages/tools/nrg-improc:$PATH
 
 RUN curl https://nvidia.github.io/nvidia-docker/centos7/nvidia-docker.repo > /etc/yum.repos.d/nvidia-docker.repo && \ 
 	yum -y install nvidia-container-toolkit ImageMagick wget bzip2 git bc which libX11 libXt java 
@@ -28,6 +28,6 @@ RUN cd /var/local; git clone https://github.com/MIC-DKFZ/HD-BET; cd HD-BET; pip 
 COPY  mcr/for_redistribution_files_only/* /usr/local/maskface2/
 COPY  mcr/MATLAB_MCR /usr/local/MATLAB_MCR/
 COPY nrg-improc /nrgpackages/tools/nrg-improc/
-COPY fsl6	/nrgpackages/packages/fsl6/
+COPY fsl	/nrgpackages/packages/fsl/
 
 WORKDIR /docker_mount

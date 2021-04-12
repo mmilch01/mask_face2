@@ -37,20 +37,20 @@ pushd nrg_improc &> /dev/null
         popd &> /dev/null
 popd &> /dev/null
 
-rm -rf fsl6
+rm -rf fsl
 
-mkdir -p fsl6/bin; T=`pwd`/fsl6/bin
+mkdir -p fsl/bin; T=`pwd`/fsl/bin
 
 fslbin=`which flirt`
 fslbin=${fslbin%/flirt} 
 fsl_home=${fslbin%/bin}
-mkdir -p fsl6/data/standard fsl6/lib
+mkdir -p fsl/data/standard fsl/lib
 #fslpython/envs/fslpython/bin/python3.7
 fsl_resources=(data/standard/MNI152lin_T1_1mm.nii.gz LICENCE etc/flirtsch/ident.mat)
 for res in ${fsl_resources[*]}; do
-        mkdir -p fsl6/`dirname $res`
-        echo cp $fsl_home/$res fsl6/$res
-        cp $fsl_home/$res fsl6/$res
+        mkdir -p fsl/`dirname $res`
+        echo cp $fsl_home/$res fsl/$res
+        cp $fsl_home/$res fsl/$res
 done
 
 
@@ -65,7 +65,7 @@ pushd $fslbin &> /dev/null
         cp -f $fsl_tools $T/
 popd &> /dev/null
 
-sed -i "s|.*fslpython.*|#!/usr/local/miniconda3/bin/python|g" fsl6/bin/imcp
+sed -i "s|.*fslpython.*|#!/usr/local/miniconda3/bin/python|g" fsl/bin/imcp
 
 fsl_libs=(libgfortran.so.3 libopenblas.so.0)
 libs64=(libquadmath.so.0.0.0)
@@ -73,11 +73,11 @@ libs64_targ=(libquadmath.so.0)
 
 
 for lib in ${fsl_libs[*]}; do
-        cp $fsl_home/lib/$lib fsl6/lib/
+        cp $fsl_home/lib/$lib fsl/lib/
 done
 
 for i in ${!libs64[*]}; do
-        cp /lib64/${libs64[i]} fsl6/lib/${libs64_targ[i]}
+        cp /lib64/${libs64[i]} fsl/lib/${libs64_targ[i]}
 done
 
 echo chmod -R o+rX `pwd`
