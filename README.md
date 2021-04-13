@@ -1,7 +1,7 @@
 # mask_face2
 
 ## Summary
-Face masking (version 2) algorithm to de-identify high resolution MRI of the head. 
+Facemasking2 algorithm to de-identify high resolution MRI of the head. 
 
 ## Installing as a local tool
 Environment requirements:
