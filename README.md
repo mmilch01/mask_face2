@@ -24,7 +24,7 @@ For a full list of options, run **mask_face** without parameters. If you wish to
 2. As a deployed MCR application:<br>
 **mask_face_nomatlab** <dicom_series_dir> -mcr_home <Matlab runtime environment v 9.4 installation dir> -deployed_home <deployed app dir copied from mcr/for_redistribution_files_only> <dicom_series_dir> [options]
 3. As a Docker container: <br>
-**sudo docker run** -u $(id -u ${USER}):$(id -g ${USER}) -v \`pwd\`:/docker_mount --rm xnat/facemasking2:0.9 <dicom_series_dir> [options] <br>
+**sudo docker run** -u $(id -u ${USER}):$(id -g ${USER}) -v \`pwd\`:/docker_mount --rm xnat/facemasking2:0.9 **mask_face_nomatlab** <dicom_series_dir> [options] <br>
 To add GPU support to run HDBET, use --gpus <gpu_id|all> option with **docker run** command.
 
 ## Reviewing output
