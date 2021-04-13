@@ -1,5 +1,5 @@
 ## Summary
-Facemasking2 algorithm to de-identify high resolution MRI of the head. 
+Facemasking2 algorithm to de-identify high resolution MRI of the head. This is a major update of the original <a href="https://download.nrg.wustl.edu/pub/FaceMasking/">facemasking</a> tool. 
 
 ## Installing as a local tool
 Environment requirements:
