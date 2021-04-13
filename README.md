@@ -8,7 +8,8 @@ Environment requirements:
 1. 64-bit Linux
 2. <a href="https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation">FSL 5 or 6</a> on path
 3. MATLAB R2016 or later on path, or <a href="https://www.mathworks.com/products/compiler/matlab-runtime.html">MATLAB Runtime (MCR) v.9.4</a> installed locally.
-4. (Optional) HD BET tool: https://github.com/NeuroAI-HD/HD-BET
+4. <a href="https://imagemagick.org/index.php">ImageMagick convert</a>, bc, which, zip and unzip on path
+5. (Optional) HD BET tool: https://github.com/NeuroAI-HD/HD-BET
 
 Installation: copy the contents of nrg-improc to a local directory and make sure it's on path. For an MCR installation, also copy the contents of 'mcr/for_redistribution_files_only' directory (that would be your deployed application directory). 
 
