@@ -1,0 +1,96 @@
+#!/bin/bash
+
+if [ -z $2 ]; then
+	echo "Usage: dcm_nii <dcm dir> <outroot> [options]"
+	echo "options:"
+	echo "	-d			delete orientation info"
+	echo "	-m <name>		save standard space orientation matrix"
+	echo "	-s			transform to standard space"
+	exit 0
+fi
+inrt=$1
+rtt=$2
+rt=`basename $rtt`
+rdir=${rtt%$rt}
+if [ -z "$rdir" ]; then rdir=`pwd`; fi
+
+if [ ! -d "$inrt" ]; then
+	echo "dcm_nii ERROR: no input directory $inrt, exiting"
+	exit -1
+fi
+
+mkdir -p "$rdir" &> /dev/null
+
+if [ ! -d "$rdir" ]; then
+	echo "dcm_nii ERROR: no directory/cannot create $rdir, exiting"
+	exit -1
+fi
+
+pushd $rdir
+
+args=( $* )
+pres_orient=1
+reor=0
+
+for (( i=2; i<${#args[*]}; i++ )); do
+	if [ "${args[i]}" == "-d" ]; then
+		pres_orient=0
+	fi	
+	if [ "${args[i]}" == "-s" ]; then
+		reor=1
+	fi
+	if [ "${args[i]}" == "-m" ]; then
+		(( i++ ))
+		mfile=${args[i]}
+	fi
+done
+curdir=`pwd`
+ref=`which dcm_nii`
+ref=${ref%/dcm_nii}
+
+mkdir -p ${rt}_nii
+cp $ref/dcm2nii.ini ${rt}_nii/$rt.ini
+echo dcm2nii2013 -b ${rt}_nii/$rt.ini -o ${rt}_nii ${inrt}
+dcm2nii2013 -b ${rt}_nii/$rt.ini -o ${rt}_nii ${inrt}
+
+pushd ${rt}_nii &> /dev/null
+gunzip *.gz
+
+ofile=$(ls o*.nii)
+cofile=$(ls co*.nii)
+file=$(ls [0-9]*.nii)
+
+#ofile=$(find -name o*.nii)
+#cofile=$(find -name co*.nii)
+#file=$(find -name [0-9]*.nii)
+
+if (( reor == 1 )); then
+	outfile=$ofile
+else
+	outfile=$file
+fi
+
+if [ -n "$mfile" ]; then 
+	if [ ! -f "$file" ]; then
+		echo "ERROR: cannot find untransformed file, exiting"
+		popd &> /dev/null; popd &> /dev/null
+		exit -1
+	fi
+	echo fslreorient2std $file
+	fslreorient2std $file > $curdir/$mfile
+fi
+
+if [ -z "$outfile" ]; then 
+	echo "ERROR: cannot find output file, exiting"
+	popd &> /dev/null; popd &> /dev/null
+	exit -1
+fi
+
+if (( pres_orient == 0 )); then	fslorient -deleteorient $ofile; fi
+cp $outfile ${rt}.nii
+popd &> /dev/null
+mv ${rt}_nii/${rt}.nii .
+rm -rf ${rt}_nii
+
+popd &> /dev/null
+

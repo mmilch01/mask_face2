@@ -1,0 +1,136 @@
+#!/bin/bash
+function exit_with_error
+{
+    echo "run_facemasking2_xnat ERROR: $1"; exit -1
+}
+
+function print_usage
+{
+    echo "run facemasking2 as a single, self-contained script, (optionally) using XNAT server as data source"
+    echo "usage: run_facemasking2_xnat <experiment_label> <scan ID>[,<scan ID[,...]]> [options] [mask_face options]"
+    echo "options:"
+    echo "  --srv   <URL>           XNAT server (required if using XNAT)"
+    echo "  --usr   <str>           XNAT user (required if using XNAT)"
+    echo "  --pass  <str>           XNAT password (required if using XNAT)"
+    echo "  --proj  <str>           XNAT project (required if using XNAT)"
+    echo "  --subj   <str>          XNAT subject (required if using XNAT)"
+}
+
+if [ -z "$2" ]; then
+    print_usage; exit -1
+fi
+
+RT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+xn_exp=$1; shift
+scans=$1; shift
+
+unset xn_srv xn_usr xn_pass xn_prj xn_subj ref
+
+#unset xsr xu xpa xpr xsubj xs mfpar scans
+mfpar=" -z" #create a zipped copy
+
+while [ -n "$1" ]; do
+    case $1 in
+        --srv) shift; xn_srv=$1; shift;;
+        --usr) shift; xn_usr=$1; shift;;
+        --pass) shift; xn_pass=$1; shift;;
+        --proj) shift; xn_prj=$1; shift;;
+        --subj) shift; xn_subj=$1; shift;;
+        
+#        -x_s)    shift; xs=$1; shift;;
+#        -r)    shift; mfpar="$mfpar -r study$1"; shift;; #reference scan will be saved in 'studyN' directory.
+        *)    mfpar="$mfpar $1"; shift;;
+    esac
+done
+
+#echo "$xsr" "$xu" "$xpa" "$xpr" "$xsubj" "$xs"
+echo "$mfpar" "$scans"
+
+if [ -z $scans -o -z "$xn_srv" -o -z "$xn_usr" -o -z "$xn_pass" -o -z "$xn_prj" -o -z "$xn_subj" -o -z "$xn_exp" ]; then
+    print_usage
+    echo scans=$scans, xn_srv="$xn_srv", xn_usr="$xn_usr", xn_pass="not_shown", xn_prj="$xn_prj" xn_subj="$xn_subj", xn_exp="$xn_exp"
+    exit_with_error "missing some of required parameters"
+fi
+
+#Download scans & sort DICOM's
+echo xnat2loc $xn_exp -sr $xn_srv -u $xn_usr -pa pass -pr $xn_prj -s $scans -subj $xn_subj -m
+xnat2loc $xn_exp -sr $xn_srv -u $xn_usr -pa $xn_pass -pr $xn_prj -s $scans -subj $xn_subj -m
+
+if (( $? )); then exit_with_error "could not download all scans"; fi
+
+pushd $xn_exp
+        
+        unset serinstuids sa; source scans.txt
+        if [ -z "$serinstuids" ]; then exit_with_errors "could not match scan ID's"; fi
+        IFS=', ' read -r -a orig_scans <<< $scans
+        IFS=', ' read -r -a suidmap <<< $serinstuids
+        
+        num_scans=${#orig_scans[*]}
+        ref=${suidmap[0]}; ref_uid=${suidmap[1]}; ref_defined=0
+        echo "ref: $ref"
+                
+        #orig_scans and suidmap are assumed to have the same order,
+        #so assign ref scan to corresponding scan ID from original list if order matches
+        dcm_scans=""
+        
+        n=0
+        for (( i=0; i<${#suidmap[*]}; i+=2 )); do
+            dcm_scans="$dcm_scans ${suidmap[i]}"            
+        done
+
+        dcm_scans=( ${dcm_scans[*]} )
+        
+        for ds in ${dcm_scans[*]}; do
+            sid=(`dcminfo -q -t 0x0020 0x0011 study$ds`)
+            echo "sid: $sid, ref: $ref"
+            if [ "$sid" == "$ref" ]; then
+                echo "Reference series number found ($sid)"
+                ref_dcm_scan=study$ds
+                ref_defined=1
+                break
+            fi
+        done
+        
+        if [ ! -d "$ref_dcm_scan" ]; then exit_with_error "Reference scan not found"; fi
+        ref_option="-r $ref_dcm_scan"
+        echo "Reference option: $ref_option"
+                
+        dcm_scan_list=""
+        for s in ${dcm_scans[*]}; do
+            if [ ! -d "study$s" ]; then exit_with_error "could not read scan DICOMs"; fi
+            dcm_scan_list="$dcm_scan_list,study$s"
+        done
+
+        dcm_scan_list=${dcm_scan_list#,}
+        #run facemasking
+        echo "orig_scans: ${orig_scans[*]}; dcm_scans: ${dcm_scans[*]}"
+        echo mask_face_nomatlab $dcm_scan_list $ref_option $mfpar       
+        time mask_face_nomatlab $dcm_scan_list $ref_option $mfpar
+        
+        if (( $? )); then exit_with_error "facemasking failed"; fi   
+        #upload DICOMs and QC images.
+        p1="extract=true&overwrite=true&format=DICOM&content=DICOM_FACEMASKED"
+        p2="extract=true&overwrite=true&format=PNG&content=FACEMASKING_QC"
+        rrt="${xn_srv}/REST/projects/${xn_prj}/subjects/${xn_subj}/experiments/${xn_exp}/scans"
+      	JS=`curl -s -k -u $xn_usr:$xn_pass "$xn_srv/data/JSESSION"`
+    	JSERROR=`echo $JS | grep Error`
+	    if [ -n "$JSERROR" ]; then exit_with_error "uploading results failed: cannot acquire JSESSION"; fi
+        
+        for i in ${!orig_scans[*]}; do
+            sx=${orig_scans[i]}; sd=${dcm_scans[i]}
+            echo "sx: $sx; sd: $sd"
+            echo curl -X POST -k --cookie JSESSIONID=$JS "$rrt/$sx/resources/DICOM_DEFACED/files?$p1" \
+                -F "DICOM_DEFACED/$sd.zip=@DICOM_DEFACED/$sd.zip"
+            curl -X POST -k --cookie JSESSIONID=$JS "$rrt/$sx/resources/DICOM_DEFACED/files?$p1" \
+                -F "DICOM_DEFACED/$sd.zip=@DICOM_DEFACED/$sd.zip"
+            if (( $? )); then exit_with_error "uploading scan $sx failed"; fi
+            echo curl -X POST -k --cookie JSESSIONID=$JS "$rrt/$sx/resources/DEFACE_QC/files?$p2" \
+                -F "maskface/${sd}_qc.zip=@maskface/${sd}_qc.zip"
+            curl -X POST -k --cookie JSESSIONID=$JS "$rrt/$sx/resources/DEFACE_QC/files?$p2" \
+                -F "maskface/${sd}_qc.zip=@maskface/${sd}_qc.zip"
+            if (( $? )); then exit_with_error "uploading QC snapshots for scan $sx failed"; fi
+        done            
+popd
+
+echo "run_facemasking_xnat done."
+

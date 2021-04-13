@@ -1,0 +1,28 @@
+#!/bin/bash
+
+if [ -z "$2" ]; then
+    echo "usage: hdbet_wrapper <in>.img <out>.img"
+    exit -1
+fi
+
+in=$1; shift; out=$1
+
+echo hd-bet -tta 0 -mode fast -i $in.img -o $out
+hd-bet -tta 0 -mode fast -i $in.img -o $out
+
+#re-try in case of out of memory error.
+if [ ! -f "${out}_mask.nii.gz" ]; then
+    echo "error code: $?" 
+    sleep 10
+    hd-bet -tta 0 -mode fast -i $in.img -o $out
+fi
+
+if [ ! -f "${out}_mask.nii.gz" ]; then
+    echo "brain extraction failed"
+    exit -1
+fi
+
+rm -f $out.nii.gz
+
+fslchfiletype NIFTI_PAIR ${out}_mask.nii.gz ${out}.img
+rm -f ${out}_mask.nii.gz

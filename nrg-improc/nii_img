@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [ -z $1 ]; then
+	echo "Usage: nii_img <.nii file> [.img root]"
+	exit 0
+fi
+inrt=$1
+if [ -n "$2" ]; then
+	outrt=$2
+else
+	outrt=${inrt%.nii}
+fi
+mat=$(mktemp eyeXXXX.mat)
+echo "1 0 0 0" > $mat; echo "0 1 0 0" >> $mat; echo "0 0 1 0" >> $mat; echo "0 0 0 1" >> $mat
+oldType=$FSLOUTPUTTYPE
+FSLOUTPUTTYPE=NIFTI_PAIR
+echo flirt -applyxfm -init $mat -in $inrt -ref $inrt -out $outrt
+flirt -applyxfm -init $mat -in $inrt -ref $inrt -out $outrt
+FSLOUTPUTTYPE=$oldType
+rm -rf $mat
+
