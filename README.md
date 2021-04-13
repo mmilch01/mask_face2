@@ -1,5 +1,3 @@
-# mask_face2
-
 ## Summary
 Facemasking2 algorithm to de-identify high resolution MRI of the head. 
 
