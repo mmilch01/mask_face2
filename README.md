@@ -13,7 +13,7 @@ Environment requirements:
 Installation: copy the contents of nrg-improc to a local directory and make sure it's on path. For an MCR installation, also copy the contents of 'mcr/for_redistribution_files_only' directory (that would be your deployed application directory). 
 
 ## Installing as a Docker container
-Make sure the up to date version of <a href="https://docs.docker.com/get-docker/">Docker package</a> is installed and Docker daemon is running.
+Make sure the up to date version of <a href="https://docs.docker.com/get-docker/">Docker</a> is installed and Docker daemon is running.
 >sudo docker pull xnat/facemasking2:0.9
 
 ## Running
