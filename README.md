@@ -11,7 +11,7 @@ Environment requirements:
 4. <a href="https://imagemagick.org/index.php">ImageMagick convert</a>, bc, which, zip and unzip on path
 5. (Optional) HD BET tool: https://github.com/NeuroAI-HD/HD-BET
 
-Installation: copy the contents of nrg-improc to a local directory and make sure it's on path. For an MCR installation, also copy the contents of 'mcr/for_redistribution_files_only' directory (that would be your deployed application directory). 
+**Installation:** copy the contents of nrg-improc to a local directory and make sure it's on path. For an MCR installation, also copy the contents of 'mcr/for_redistribution_files_only' directory (that would be your deployed application directory). 
 
 ## Installing as a Docker container
 Make sure the up to date version of <a href="https://docs.docker.com/get-docker/">Docker</a> is installed and Docker daemon is running.<br>
