@@ -18,7 +18,7 @@ mkdir -p nrg-improc/ATLAS nrg-improc/matlab/routines nrg-improc/matlab/surf
 nrg_improc_tools="run_facemasking2_xnat mask_face mask_face_nomatlab cmpanalyze analyze2dcm dcm2analyze dcm_nii nii_img hdbet_wrapper dcm2nii2013 dcm2nii.ini xnat2loc dcm_sort dcminfo"
 atlas_resources="ATLAS/*.mat ATLAS/*.lst ATLAS/CAPIIO.hdr ATLAS/CAPIIO.img"
 matlab_surf_resources="RectangularMesh.m blur3_thin.m maskVol.m mask_surf.m plane_eq.m projectVol.m showmesh.m test_rect_mesh.m"
-matlab_routines_resources="avw_hdr_make.m avw_hdr_read.m avw_hdr_write.m avw_img_read.m avw_img_write.m blur3.m dispvol.m dispvol3D.m get_seg_stats.m saveVol.m save_vol.m select_threshold.m"
+matlab_routines_resources="mask_surf_auto.m avw_hdr_make.m avw_hdr_read.m avw_hdr_write.m avw_img_read.m avw_img_write.m blur3.m dispvol.m dispvol3D.m get_seg_stats.m saveVol.m save_vol.m select_threshold.m"
 
 
 pushd nrg_improc &> /dev/null
