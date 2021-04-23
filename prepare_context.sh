@@ -59,7 +59,7 @@ if [ ! -d "$fslbin" -o ! -f "$fsl_home/data/standard/MNI152lin_T1_1mm.nii.gz" ];
         exit -1
 fi
 
-fsl_tools="flirt fslmaths img2imgcoord fslcpgeom convert_xfm fslreorient2std bet bet2 remove_ext tmpnam imtest fslval fslhd avscale fslswapdim imcp fslchfiletype fslchfiletype_exe"
+fsl_tools="flirt fslmaths img2imgcoord fslcpgeom convert_xfm fslreorient2std bet bet2 remove_ext tmpnam imtest fslval fslhd avscale fslswapdim fslswapdim_exe imcp fslchfiletype fslchfiletype_exe"
 pushd $fslbin &> /dev/null
         echo cp -f $fsl_tools $T/
         cp -f $fsl_tools $T/
