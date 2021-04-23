@@ -46,7 +46,7 @@ fslbin=${fslbin%/flirt}
 fsl_home=${fslbin%/bin}
 mkdir -p fsl/data/standard fsl/lib
 #fslpython/envs/fslpython/bin/python3.7
-fsl_resources=(data/standard/MNI152lin_T1_1mm.nii.gz LICENCE etc/flirtsch/ident.mat)
+fsl_resources=(data/standard/MNI152_T1_2mm_brain.nii.gz data/standard/MNI152lin_T1_1mm.nii.gz LICENCE etc/flirtsch/ident.mat)
 for res in ${fsl_resources[*]}; do
         mkdir -p fsl/`dirname $res`
         echo cp $fsl_home/$res fsl/$res
