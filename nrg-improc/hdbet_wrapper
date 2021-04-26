@@ -7,8 +7,17 @@ fi
 
 in=$1; shift; out=$1
 
-echo hd-bet -tta 0 -mode fast -i $in.img -o $out
-hd-bet -tta 0 -mode fast -i $in.img -o $out
+gpu_on=(`command -v nvidia-smi`)
+if [ -z "$gpu_on" ]; then
+	device="-device cpu"
+else
+	device="-device 0"
+fi
+
+#echo "device: $device"
+
+echo hd-bet -tta 0 $device -mode fast -i $in.img -o $out
+hd-bet -tta 0 $device -mode fast -i $in.img -o $out
 
 #re-try in case of out of memory error.
 if [ ! -f "${out}_mask.nii.gz" ]; then
