@@ -159,8 +159,12 @@ local inrt=$1
 			    echo cmpanalyze -q -f ${src}_d2a ${src}_nii_orig
 				flp=(`cmpanalyze -q -f ${src}_d2a ${src}_nii_orig`)
 				if [ "${flp[3]}" != "1" ]; then exit_with_error "annot transform from standard to native space"; fi
+				echo fslorient -deleteorient $procdir/$rt_out
+				fslorient -deleteorient $procdir/$rt_out
+				
 				echo fslcpgeom $procdir/$src $procdir/$rt_out
 				fslcpgeom $procdir/$src $procdir/$rt_out
+				
 				echo flirt -applyxfm -init std2$src.mat -in $procdir/$rt_out -ref ${src}_nii_orig -out $procdir/${src}_masked_nii_orig
 				flirt -applyxfm -init std2$src.mat -in $procdir/$rt_out -ref ${src}_nii_orig -out $procdir/${src}_masked_nii_orig
 				rt_out=${src}_masked_nii_orig
@@ -426,6 +430,7 @@ if [ -z "$1" ]; then
 	echo "	-z		if output is DICOM, create zipped copy"
 	echo "	-b <0|1>	[0]. If set to 1, use FSL's BET to exclude brain mask"
 	echo "	-bhd <0|1>	[0]. If set to 1, use HDBET to exclude brain mask (supercedes -b option)"
+	echo "	-br <0|1>	[0]. If set to 1, use brain mask for registration. Requires -b or -bhd"
 	echo "	-d		current date-time in temp directory name"
 	echo "	-e <0|1>	[0] Mask ears"
 	echo "	-r <ref>	use <ref> (one of the scans) as reference to coregister "
@@ -452,7 +457,7 @@ src=$1
 if [ -f "$src" ]; then src=`cat $src`; fi
 src=(`split_str "$src" ","`)
 
-procdir=maskface;brainmask=0;manual_roi=0;mask_atlas=0;bhd=0
+procdir=maskface;brainmask=0;manual_roi=0;mask_atlas=0;bhd=0;brain_reg=0;
 mni=1
 unset an exMask outdir brainmask tdate
 
@@ -468,6 +473,7 @@ for((i=1; i<${#args[*]}; i++)); do
 	if [ "${args[i]}" == "-nil" ]; then mni=0; continue; fi		
 	if [ "${args[i]}" == "-z" ]; then create_zip="1"; continue; fi	
 	if [ "${args[i]}" == "-b" ]; then (( i++ )); brainmask=${args[i]}; continue; fi
+	if [ "${args[i]}" == "-br" ]; then (( i++ )); brain_reg=${args[i]}; continue; fi
 	if [ "${args[i]}" == "-bhd" ]; then (( i++ )); brainmask=${args[i]};bhd=1; continue; fi
 	if [ "${args[i]}" == "-e" ]; then (( i++ )); maskears=${args[i]}; continue; fi
 	if [ "${args[i]}" == "-o" ]; then (( i++ )); outdir=${args[i]}; continue; fi
@@ -541,6 +547,10 @@ if (( nsrc>1 )); then
 	fi
 fi
 
+if (( brain_reg==1 && brainmask==0 )); then
+    exit_with_error "specify -b or -bhd option to use brain-only registration"
+fi
+
 #processing dir.
 if [ -n "$tdate" ]; then 
 	procdir=${procdir}_`date +%Y%m%d_%H%M`
@@ -589,8 +599,31 @@ done
 rt=`basename $rt`
 
 MNI152=$FSLDIR/data/standard/MNI152lin_T1_1mm.nii.gz
-atldir=`which mask_face_nomatlab`
-atldir=${atldir%/mask_face_nomatlab}/ATLAS
+if [ ! -f "$MNI152" ]; then
+    MNI152=$FSLDIR/data/standard/MNI152_T1_1mm.nii.gz
+fi
+
+MNI152_brain=$FSLDIR/data/standard/MNI152_T1_1mm_brain_mask_dil.nii.gz
+
+atldir=`which mask_face`
+atldir=${atldir%/mask_face}/ATLAS
+
+#calculate the brain mask for the reference series.
+if [ "${brainmask}" == "1" ]; then
+    if (( bhd == 0 )); then
+        # use bet
+        echo bet $rt ${rt}_bet -m -f 0.3
+    	bet $rt ${rt}_bet -m -f 0.3
+    	if (( $? )); then exit_with_error "bet brain extraction failed"; fi
+    	exMask="${rt}_bet_mask"
+    else
+        # use bet-hd
+        echo hdbet_wrapper $rt ${rt}_hdbet_mask
+        hdbet_wrapper $rt ${rt}_hdbet_mask
+        if (( $? )); then exit_with_error "hdbet brain extraction failed"; fi
+        exMask="${rt}_hdbet_mask"
+    fi        
+fi
 
 if (( manual_roi==0 )); then #automatic ROI calculation for the reference series.
 #	set -x
@@ -618,10 +651,12 @@ if (( manual_roi==0 )); then #automatic ROI calculation for the reference series
 	if [ ! -f "${T}.img" -a ! -f "$T" ]; then exit_with_error "atlas not found in location: $T"; fi
 	echo "Selected atlas: $T"
 
+    mask_opts=""
+    if (( brain_reg == 1 )); then mask_opts="-refweight $exMask -inweight $MNI152_brain"; fi
 	if [ ! -f "${ATLAS}_on_${rt}.img" ]; then	
 		#-init MNI152_reor_to_${rt}.fslmat
-		echo flirt -ref $rt -in $T -out ${ATLAS}_on_${rt} -omat ${ATLAS}_to_${rt}.fslmat
-		time flirt -ref $rt -in $T -out ${ATLAS}_on_${rt} -omat ${ATLAS}_to_${rt}.fslmat
+		echo flirt $mask_opts -ref $rt -in $T -out ${ATLAS}_on_${rt} -omat ${ATLAS}_to_${rt}.fslmat
+		time flirt $mask_opts -ref $rt -in $T -out ${ATLAS}_on_${rt} -omat ${ATLAS}_to_${rt}.fslmat
 		matrix_to_decimal ${ATLAS}_to_${rt}.fslmat
 		
 		if (( mni == 1 )); then
@@ -654,31 +689,14 @@ else #prepare data for manual ROI calculation.
 	pushd ${procdir} &> /dev/null
 fi # end of the automatic ROI calculation.
 
-#calculate the brain mask for the reference series.
-if [ "${brainmask}" == "1" ]; then
-    if (( bhd == 0 )); then
-        # use bet
-        echo bet $rt ${rt}_bet -m -f 0.3
-	bet $rt ${rt}_bet -m -f 0.3
-    	if (( $? )); then exit_with_error "bet brain extraction failed"; fi
-	exMask="${rt}_bet_mask"
-    else
-        # use bet-hd
-        echo hdbet_wrapper $rt ${rt}_hdbet_mask
-        hdbet_wrapper $rt ${rt}_hdbet_mask
-        if (( $? )); then exit_with_error "hdbet brain extraction failed"; fi
-        exMask="${rt}_hdbet_mask"
-    fi
-        
-	#now, transform the original volume to the FSL default orientation.??? why in this block??
-	echo 1 0 0 0 > eye.mat; echo 0 1 0 0 >> eye.mat; echo 0 0 1 0 >> eye.mat; echo 0 0 0 1 >> eye.mat
-	echo flirt -in $rt -ref $rt -out ${rt}_fsl -init eye.mat -applyxfm
-	flirt -in $rt -ref $rt -out ${rt}_fsl -init eye.mat -applyxfm
-	mv ${rt}.hdr ${rt}.hdr.bk
-	mv ${rt}.img ${rt}.img.bk
-	mv ${rt}_fsl.hdr ${rt}.hdr
-	mv ${rt}_fsl.img ${rt}.img	
-fi
+#now, transform the original volume to the FSL default orientation
+echo 1 0 0 0 > eye.mat; echo 0 1 0 0 >> eye.mat; echo 0 0 1 0 >> eye.mat; echo 0 0 0 1 >> eye.mat
+echo flirt -in $rt -ref $rt -out ${rt}_fsl -init eye.mat -applyxfm
+flirt -in $rt -ref $rt -out ${rt}_fsl -init eye.mat -applyxfm
+mv ${rt}.hdr ${rt}.hdr.bk
+mv ${rt}.img ${rt}.img.bk
+mv ${rt}_fsl.hdr ${rt}.hdr
+mv ${rt}_fsl.img ${rt}.img	
 
 #create a mask from the target atlas.
 if (( mask_atlas )); then 

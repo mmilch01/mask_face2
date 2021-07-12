@@ -14,7 +14,8 @@ else
 	device="-device 0"
 fi
 
-#echo "device: $device"
+device="-device cpu"
+echo "device: $device"
 
 echo hd-bet -tta 0 $device -mode fast -i $in.img -o $out
 hd-bet -tta 0 $device -mode fast -i $in.img -o $out

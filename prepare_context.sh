@@ -2,6 +2,14 @@
 
 echo "REMEMBER, MUST RUN AS LOCAL USER"
 
+if [ -z "$1" ]; then
+	echo "usage: prepare_context.sh <1|2>"
+	exit -1
+fi
+
+ver=$1
+if (( ver==1 )); then matlab_dir=matlab-fm1; else matlab_dir=matlab; fi
+
 if [ ! -d "nrg_improc" ]; then 
         echo git clone https://github.com/mmilch01/nrg_improc
         git clone https://github.com/mmilch01/nrg_improc
@@ -27,11 +35,11 @@ pushd nrg_improc &> /dev/null
         echo cp -f $atlas_resources $T/ATLAS/
         cp -f $atlas_resources $T/ATLAS/
         
-        pushd matlab/routines &> /dev/null
+        pushd $matlab_dir/routines &> /dev/null
                 echo cp -rf $matlab_routines_resources $T/matlab/routines/
                 cp -rf $matlab_routines_resources $T/matlab/routines/
         popd &> /dev/null
-        pushd matlab/surf &> /dev/null
+        pushd $matlab_dir/surf &> /dev/null
                 echo cp -rf $matlab_surf_resources $T/matlab/surf/
                 cp -rf $matlab_surf_resources $T/matlab/surf/
         popd &> /dev/null
